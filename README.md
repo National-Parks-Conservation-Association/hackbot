@@ -53,6 +53,7 @@ Alternatively, you can use the [1Password CLI](https://developer.1password.com/d
 #### Specify your map.json file's location
 The only path that's hardcoded into the main script is the path to `map.json`. Open the `mfa_cronjob_open_window.py` file and update the `initialize_directories()` function with the file path you're using for your map.
 
+
 #### Install dependencies
 
 * selenium: This is the main package for web scraping and automation with browser drivers. It provides the webdriver interface, among other tools.
@@ -85,6 +86,52 @@ Run `mfa_cronjob_open_window.py` in an IDE, via the command line, or use cron.
 The Hackbot uses Chrome and enters your credentials in order to initiate a file download from ROI servers. The file downloads faster than you can say "Why isn't there an API for this?" and is placed into the `landing_pad/` where it gets unzipped. Hackbot then renames the file to keep just the "job number" associated with the email you received for that report (or the date if needed), plus the report name. The file is then moved to the location you specified. The report name is used to look up the location in the map file.
 
 The first time the script runs you will be prompted for your MFA code.
+
+### Task Scheduler Setup
+
+To automate the running of your Python scripts using Task Scheduler, follow these steps:
+
+1. **Create the Scheduled Task**
+
+   Use the [`SchedulePythonScripts.ps1`](SchedulePythonScripts.ps1) script to create a scheduled task that runs [`run_python_scripts.ps1`](run_python_scripts.ps1) at a specified time daily.
+
+   ```ps1
+   # Configuration
+   $executionScriptPath = "C:\Users\jhaybok\OneDrive - National Parks Conservation Association\Documents\Github\hackbot\run_python_scripts.ps1"
+   $taskName = "DailyROIDownloadAndMover"
+   $taskTime = "4:15AM"
+
+   # Create the scheduled task
+   try {
+       # Create the action to run the script
+       $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$executionScriptPath`""
+       
+       # Create the daily trigger
+       $trigger = New-ScheduledTaskTrigger -Daily -At $taskTime
+       
+       # Create settings
+       $settings = New-ScheduledTaskSettingsSet -WakeToRun -ExecutionTimeLimit (New-TimeSpan -Hours 2)
+       
+       # Remove existing task if it exists
+       $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+       if ($existingTask) {
+           Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+       }
+       
+       # Register the task
+       Register-ScheduledTask -TaskName $taskName `
+           -Action $action `
+           -Trigger $trigger `
+           -Settings $settings `
+           -RunLevel Highest
+       
+       Write-Host "Task created successfully!"
+       Write-Host "To test the task, run: Start-ScheduledTask -TaskName `"$taskName`""
+   } catch {
+       Write-Host "Failed to create task: $_"
+       throw
+   }
+
 
 
 
