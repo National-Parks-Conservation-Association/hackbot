@@ -1,5 +1,6 @@
 import os
 import json
+import sys
 import zipfile
 import time
 import shutil
@@ -173,10 +174,10 @@ def main(driver, link_file_path):
                 os.path.join(directory, new_filename),
                 os.path.join(directory, static_name)
             )
-
+        
     except Exception as e:
         print(f"An error occurred while processing {link_file_path}: {e}")
-
+        sys.exit(1) # Exit the script after processing the file
 def process_all_links(driver):
     """Processes all .txt files with URLs in the roi_links_dir using the provided driver."""
     link_files = [f for f in os.listdir(roi_links_dir) if f.endswith('.txt')]
@@ -192,5 +193,6 @@ if __name__ == "__main__":
     initialize_directories()
     driver = setup_driver()
     process_all_links(driver)
+    sys.exit(0) # Exit the script after processing all files
     #driver.quit()
     #driver.close()
